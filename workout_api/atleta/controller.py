@@ -101,7 +101,7 @@ async def get(id: UUID4, db_session: DatabaseDependency) -> AtletaOut:
     status_code=status.HTTP_200_OK,
     response_model=AtletaOut,
 )
-async def get(id: UUID4, db_session: DatabaseDependency, atleta_up: AtletaUpdate = Body(...)) -> AtletaOut:
+async def patch(id: UUID4, db_session: DatabaseDependency, atleta_up: AtletaUpdate = Body(...)) -> AtletaOut:
     atleta: AtletaOut = (
         await db_session.execute(select(AtletaModel).filter_by(id=id))
     ).scalars().first()
@@ -127,7 +127,7 @@ async def get(id: UUID4, db_session: DatabaseDependency, atleta_up: AtletaUpdate
     summary='Deletar um Atleta pelo id',
     status_code=status.HTTP_204_NO_CONTENT
 )
-async def get(id: UUID4, db_session: DatabaseDependency) -> None:
+async def delete(id: UUID4, db_session: DatabaseDependency) -> None:
     atleta: AtletaOut = (
         await db_session.execute(select(AtletaModel).filter_by(id=id))
     ).scalars().first()
