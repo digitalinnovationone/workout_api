@@ -1,8 +1,11 @@
+# Inicia o uvicorn para rodar o FastAPI
 run:
 	@uvicorn workout_api.main:app --reload
 
+# Cria as migrações do banco de dados postgres
 create-migrations:
-	@PYTHONPATH=$PYTHONPATH:$(pwd) alembic revision --autogenerate -m $(d)
+	@cmd /C "set PYTHONPATH=%cd% && alembic revision --autogenerate -m $(d)"
 
+# Executa as migrações do banco de dados postgres
 run-migrations:
-	@PYTHONPATH=$PYTHONPATH:$(pwd) alembic upgrade head
+	@cmd /C "set PYTHONPATH=%cd% && alembic upgrade head"
