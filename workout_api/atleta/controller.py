@@ -1,6 +1,8 @@
 from datetime import datetime
+from typing import Optional
 from uuid import uuid4
 from fastapi import APIRouter, Body, HTTPException, status
+from fastapi.params import Query
 from pydantic import UUID4
 
 from workout_api.atleta.schemas import AtletaIn, AtletaOut, AtletaUpdate
@@ -10,6 +12,10 @@ from workout_api.centro_treinamento.models import CentroTreinamentoModel
 
 from workout_api.contrib.dependencies import DatabaseDependency
 from sqlalchemy.future import select
+from sqlalchemy.exc import IntegrityError
+
+from fastapi_pagination import LimitOffsetPage, Page, add_pagination
+from fastapi_pagination import Params, paginate
 
 router = APIRouter()
 
@@ -54,11 +60,17 @@ async def post(
         
         db_session.add(atleta_model)
         await db_session.commit()
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail='Ocorreu um erro ao inserir os dados no banco'
-        )
+    except IntegrityError as e:
+        if 'cpf' in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_303_SEE_OTHER, 
+                detail=f'Já existe um atleta cadastrado com o CPF: {atleta_in.cpf}'
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                detail='Ocorreu um erro ao inserir os dados no banco'
+            )
 
     return atleta_out
 
@@ -67,12 +79,32 @@ async def post(
     '/', 
     summary='Consultar todos os Atletas',
     status_code=status.HTTP_200_OK,
-    response_model=list[AtletaOut],
+    response_model=LimitOffsetPage[AtletaOut],
 )
-async def query(db_session: DatabaseDependency) -> list[AtletaOut]:
-    atletas: list[AtletaOut] = (await db_session.execute(select(AtletaModel))).scalars().all()
+async def query(
+    db_session: DatabaseDependency, 
+    nome: Optional[str] = Query(None, description="Nome do atleta"), 
+    cpf: Optional[str] = Query(None, description="CPF do atleta")
+) -> LimitOffsetPage[AtletaOut]:
+    query = select(AtletaModel)
+    if nome:
+        query = query.filter(AtletaModel.nome == nome)
+    if cpf:
+        query = query.filter(AtletaModel.cpf == cpf)
+
+    atletas = await db_session.execute(query)
+
     
-    return [AtletaOut.model_validate(atleta) for atleta in atletas]
+    atletas_with_details = [
+        {
+            "nome": atleta.nome,
+            "centro_treinamento": atleta.centro_treinamento.nome,
+            "categoria": atleta.categoria.nome
+        }
+        for atleta in atletas.scalars().all()
+    ]
+
+    return paginate(atletas_with_details)
 
 
 @router.get(

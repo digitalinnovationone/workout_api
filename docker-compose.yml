@@ -1,7 +1,7 @@
 version: "3"
 services:
   db:
-    image: postgres:11-alpine
+    image: postgres:latest
     environment:
       POSTGRES_PASSWORD: workout
       POSTGRES_USER: workout
