@@ -54,6 +54,14 @@ make run
 ```
 e acesse: http://127.0.0.1:8000/docs
 
+## Parando o processo do Docker
+
+Para parar o processo do Banco de Dados no Docker Compose execute:
+
+```bash
+make stop-docker
+```
+
 # Desafio Final
     - adicionar query parameters nos endpoints
         - atleta
