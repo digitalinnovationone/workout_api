@@ -53,6 +53,8 @@ async def get(id: UUID4, db_session: DatabaseDependency) -> CentroTreinamentoOut
         await db_session.execute(select(CentroTreinamentoModel).filter_by(id=id))
     ).scalars().first()
 
+    breakpoint()
+
     if not centro_treinamento_out:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, 

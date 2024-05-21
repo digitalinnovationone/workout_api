@@ -23,6 +23,17 @@ async def post(
     db_session: DatabaseDependency, 
     atleta_in: AtletaIn = Body(...)
 ):
+    # Check if an athlete with the same CPF already exists
+    existing_atleta = (await db_session.execute(
+        select(AtletaModel).filter_by(cpf=atleta_in.cpf))
+    ).scalars().first()
+
+    if existing_atleta:
+        raise HTTPException(
+            status_code=status.HTTP_303_SEE_OTHER, 
+            detail=f'Já existe um atleta cadastrado com o cpf: {atleta_in.cpf}'
+        )
+
     categoria_nome = atleta_in.categoria.nome
     centro_treinamento_nome = atleta_in.centro_treinamento.nome
 
@@ -61,82 +72,3 @@ async def post(
         )
 
     return atleta_out
-
-
-@router.get(
-    '/', 
-    summary='Consultar todos os Atletas',
-    status_code=status.HTTP_200_OK,
-    response_model=list[AtletaOut],
-)
-async def query(db_session: DatabaseDependency) -> list[AtletaOut]:
-    atletas: list[AtletaOut] = (await db_session.execute(select(AtletaModel))).scalars().all()
-    
-    return [AtletaOut.model_validate(atleta) for atleta in atletas]
-
-
-@router.get(
-    '/{id}', 
-    summary='Consulta um Atleta pelo id',
-    status_code=status.HTTP_200_OK,
-    response_model=AtletaOut,
-)
-async def get(id: UUID4, db_session: DatabaseDependency) -> AtletaOut:
-    atleta: AtletaOut = (
-        await db_session.execute(select(AtletaModel).filter_by(id=id))
-    ).scalars().first()
-
-    if not atleta:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail=f'Atleta não encontrado no id: {id}'
-        )
-    
-    return atleta
-
-
-@router.patch(
-    '/{id}', 
-    summary='Editar um Atleta pelo id',
-    status_code=status.HTTP_200_OK,
-    response_model=AtletaOut,
-)
-async def patch(id: UUID4, db_session: DatabaseDependency, atleta_up: AtletaUpdate = Body(...)) -> AtletaOut:
-    atleta: AtletaOut = (
-        await db_session.execute(select(AtletaModel).filter_by(id=id))
-    ).scalars().first()
-
-    if not atleta:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail=f'Atleta não encontrado no id: {id}'
-        )
-    
-    atleta_update = atleta_up.model_dump(exclude_unset=True)
-    for key, value in atleta_update.items():
-        setattr(atleta, key, value)
-
-    await db_session.commit()
-    await db_session.refresh(atleta)
-
-    return atleta
-
-
-@router.delete(
-    '/{id}', 
-    summary='Deletar um Atleta pelo id',
-    status_code=status.HTTP_204_NO_CONTENT
-)
-async def delete(id: UUID4, db_session: DatabaseDependency) -> None:
-    atleta: AtletaOut = (
-        await db_session.execute(select(AtletaModel).filter_by(id=id))
-    ).scalars().first()
-
-    if not atleta:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail=f'Atleta não encontrado no id: {id}'
-        )
-    
-    await db_session.delete(atleta)
-    await db_session.commit()
