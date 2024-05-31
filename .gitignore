@@ -127,6 +127,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+workoutapi
 
 # Spyder project settings
 .spyderproject
