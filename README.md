@@ -1,3 +1,18 @@
+# Nosso Desafio de Projeto
+Nesse desafio fiz um fork no repositório original da [DIO](https://github.com/digitalinnovationone/workout_api), onde pude acompanhar junto a [Nayanna Nara](https://github.com/nayannanara), DEV Expert deste projeto, o desenvolvimento da API. 
+
+# Dificuldades Encontradas
+Devido o projeto já ter sedo desenvolvido há mais tempo, tive muita dificuldade em desenvolver do inicio, acompanhando o treinamento. Problemas como versões de pacotes, virtualização(tive que instalar o LINUX sem sucesso). Com respeito e gratidão deixo abaixo as descrições já desenvolvidas do projeto inicial.
+
+
+# Acompanhamento do Desafio
+Como o desejo era desenvolver tudo do zero acompanhei todas as instruções. Ao subir as Migrations houve muitos erros em toda estrutura do Alembic e não rodou meu projeto.
+
+
+
+
+
+
 # FastAPI
 ### Quem é o FastAPi?
 Framework FastAPI, alta performance, fácil de aprender, fácil de codar, pronto para produção.
