@@ -1,3 +1,4 @@
+
 from uuid import uuid4
 from fastapi import APIRouter, Body, HTTPException, status
 from pydantic import UUID4
@@ -52,6 +53,8 @@ async def get(id: UUID4, db_session: DatabaseDependency) -> CentroTreinamentoOut
     centro_treinamento_out: CentroTreinamentoOut = (
         await db_session.execute(select(CentroTreinamentoModel).filter_by(id=id))
     ).scalars().first()
+
+    breakpoint()
 
     if not centro_treinamento_out:
         raise HTTPException(
