@@ -2,17 +2,13 @@ from datetime import datetime
 from uuid import uuid4
 from fastapi import APIRouter, Body, HTTPException, status
 from pydantic import UUID4
-
 from workout_api.atleta.schemas import AtletaIn, AtletaOut, AtletaUpdate
 from workout_api.atleta.models import AtletaModel
 from workout_api.categorias.models import CategoriaModel
 from workout_api.centro_treinamento.models import CentroTreinamentoModel
-
 from workout_api.contrib.dependencies import DatabaseDependency
 from sqlalchemy.future import select
-
 router = APIRouter()
-
 @router.post(
     '/', 
     summary='Criar um novo atleta',
@@ -23,6 +19,17 @@ async def post(
     db_session: DatabaseDependency, 
     atleta_in: AtletaIn = Body(...)
 ):
+    # Check if an athlete with the same CPF already exists
+    existing_atleta = (await db_session.execute(
+        select(AtletaModel).filter_by(cpf=atleta_in.cpf))
+    ).scalars().first()
+
+    if existing_atleta:
+        raise HTTPException(
+            status_code=status.HTTP_303_SEE_OTHER, 
+            detail=f'Já existe um atleta cadastrado com o cpf: {atleta_in.cpf}'
+        )
+
     categoria_nome = atleta_in.categoria.nome
     centro_treinamento_nome = atleta_in.centro_treinamento.nome
 
@@ -48,7 +55,6 @@ async def post(
     try:
         atleta_out = AtletaOut(id=uuid4(), created_at=datetime.utcnow(), **atleta_in.model_dump())
         atleta_model = AtletaModel(**atleta_out.model_dump(exclude={'categoria', 'centro_treinamento'}))
-
         atleta_model.categoria_id = categoria.pk_id
         atleta_model.centro_treinamento_id = centro_treinamento.pk_id
         
@@ -71,7 +77,7 @@ async def post(
 )
 async def query(db_session: DatabaseDependency) -> list[AtletaOut]:
     atletas: list[AtletaOut] = (await db_session.execute(select(AtletaModel))).scalars().all()
-    
+
     return [AtletaOut.model_validate(atleta) for atleta in atletas]
 
 
@@ -91,7 +97,7 @@ async def get(id: UUID4, db_session: DatabaseDependency) -> AtletaOut:
             status_code=status.HTTP_404_NOT_FOUND, 
             detail=f'Atleta não encontrado no id: {id}'
         )
-    
+
     return atleta
 
 
@@ -111,7 +117,7 @@ async def patch(id: UUID4, db_session: DatabaseDependency, atleta_up: AtletaUpda
             status_code=status.HTTP_404_NOT_FOUND, 
             detail=f'Atleta não encontrado no id: {id}'
         )
-    
+
     atleta_update = atleta_up.model_dump(exclude_unset=True)
     for key, value in atleta_update.items():
         setattr(atleta, key, value)
@@ -137,6 +143,6 @@ async def delete(id: UUID4, db_session: DatabaseDependency) -> None:
             status_code=status.HTTP_404_NOT_FOUND, 
             detail=f'Atleta não encontrado no id: {id}'
         )
-    
+
     await db_session.delete(atleta)
     await db_session.commit()
