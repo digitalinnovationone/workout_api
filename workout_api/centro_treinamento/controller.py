@@ -1,6 +1,8 @@
 from uuid import uuid4
-from fastapi import APIRouter, Body, HTTPException, status
+from fastapi import APIRouter, Body, HTTPException, status, Query
 from pydantic import UUID4
+from sqlalchemy import exc
+from fastapi_pagination import paginate, Page
 from workout_api.centro_treinamento.schemas import CentroTreinamentoIn, CentroTreinamentoOut
 from workout_api.centro_treinamento.models import CentroTreinamentoModel
 
@@ -22,24 +24,34 @@ async def post(
     centro_treinamento_out = CentroTreinamentoOut(id=uuid4(), **centro_treinamento_in.model_dump())
     centro_treinamento_model = CentroTreinamentoModel(**centro_treinamento_out.model_dump())
     
-    db_session.add(centro_treinamento_model)
-    await db_session.commit()
+    try:
+        db_session.add(centro_treinamento_model)
+        await db_session.commit()
+    except exc.IntegrityError:
+        await db_session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_303_SEE_OTHER,
+            detail=f'Já existe um centro de treinamento cadastrado com o nome: {centro_treinamento_model.nome}'
+        )
 
     return centro_treinamento_out
-    
-    
+
+
 @router.get(
     '/', 
     summary='Consultar todos os centros de treinamento',
     status_code=status.HTTP_200_OK,
-    response_model=list[CentroTreinamentoOut],
+    response_model=Page[CentroTreinamentoOut],
 )
-async def query(db_session: DatabaseDependency) -> list[CentroTreinamentoOut]:
-    centros_treinamento_out: list[CentroTreinamentoOut] = (
-        await db_session.execute(select(CentroTreinamentoModel))
-    ).scalars().all()
+async def query(
+    db_session: DatabaseDependency,
+    limit: int = Query(10, description="Número de itens por página"),
+    offset: int = Query(0, description="Número de itens a serem pulados"),
+) -> Page[CentroTreinamentoOut]:
+    query = select(CentroTreinamentoModel)
+    centros_treinamento = await db_session.execute(query)
     
-    return centros_treinamento_out
+    return paginate(centros_treinamento, limit=limit, offset=offset)
 
 
 @router.get(
