@@ -15,7 +15,14 @@ class Atleta(BaseSchema):
     sexo: Annotated[str, Field(description='Sexo do atleta', example='M', max_length=1)]
     categoria: Annotated[CategoriaIn, Field(description='Categoria do atleta')]
     centro_treinamento: Annotated[CentroTreinamentoAtleta, Field(description='Centro de treinamento do atleta')]
+    
+class AtletaListOut(BaseSchema):
+    nome: Annotated[str, Field(description="Nome do atleta", example="Joao")]
+    centro_treinamento: CentroTreinamentoAtleta
+    categoria: CategoriaIn
 
+    class Config:
+        orm_mode = True
 
 class AtletaIn(Atleta):
     pass
