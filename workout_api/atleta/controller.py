@@ -12,6 +12,11 @@ from workout_api.contrib.dependencies import DatabaseDependency
 from sqlalchemy.future import select
 
 router = APIRouter()
+from schemas import AtletaResumo
+
+@router.get("/atletas/resumo", response_model=List[AtletaResumo])
+def get_atletas_resumo(db: Session = Depends(get_db)):
+    return db.query(AtletaModel).all()
 
 @router.post(
     '/', 
