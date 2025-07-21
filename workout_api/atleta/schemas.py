@@ -27,3 +27,12 @@ class AtletaOut(Atleta, OutMixin):
 class AtletaUpdate(BaseSchema):
     nome: Annotated[Optional[str], Field(None, description='Nome do atleta', example='Joao', max_length=50)]
     idade: Annotated[Optional[int], Field(None, description='Idade do atleta', example=25)]
+
+
+class AtletaListOut(BaseSchema):
+    nome: Annotated[str, Field(description='Nome do atleta', example='Joao', max_length=50)]
+    categoria: Annotated[str, Field(description='Nome da categoria do atleta', example='Scale')]
+    centro_treinamento: Annotated[str, Field(description='Nome do centro de treinamento do atleta', example='CT King')]
+
+    class Config:
+        from_attributes = True
