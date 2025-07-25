@@ -1,0 +1,59 @@
+[project]
+name = "workout-api"
+version = "0.1.0"
+description = ""
+authors = [{ name = "luiz_loon", email = "luiz_loon@yahoo.com.br" }]
+readme = "README.md"
+requires-python = ">=3.13,<4.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+
+[tool.poetry.dependencies]
+fastapi = { extras = ["standard"], version = "^0.116.1" }
+sqlalchemy = { extras = ["asyncio"], version = "^2.0.41" }
+pydantic-settings = "^2.10.1"
+psycopg = { extras = ["binary"], version = "^3.2.9" }
+alembic = "^1.16.4"
+factory-boy = "^3.3.3"
+fastapi-pagination = "^0.13.3"
+
+[tool.poetry.group.dev.dependencies]
+taskipy = "^1.14.1"
+pytest = "^8.4.1"
+ruff = "^0.12.4"
+pytest-cov = "^6.2.1"
+pytest-asyncio = "^1.1.0"
+testcontainers = "^4.10.0"
+ipdb = "^0.13.13"
+
+[tool.ruff]
+line-length = 79
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+preview = true
+select = ['I', 'F', 'E', 'W', 'PL', 'PT']
+
+[tool.ruff.format]
+preview = true
+quote-style = 'single'
+
+[tool.pytest.ini_options]
+pythonpath = '.'
+addopts = '-p no:warnings'
+async_default_fixture_loop_scope = 'function'
+testpaths = ["tests"]
+asyncio_mode = "strict"
+anyio_backend = "asyncio"
+
+[tool.taskipy.tasks]
+lint = 'ruff check'
+format = 'ruff format'
+run = 'fastapi dev workout_api/main.py'
+pre_test = 'task lint'
+test = 'pytest -s -x --cov=workout_api -vv'
+post_test = 'coverage html'
+
+[tool.coverage.run]
+concurrency = ['thread', 'greenlet']
