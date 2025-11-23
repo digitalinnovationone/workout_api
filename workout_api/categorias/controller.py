@@ -1,60 +1,49 @@
-from uuid import uuid4
-from fastapi import APIRouter, Body, HTTPException, status
-from pydantic import UUID4
-from workout_api.categorias.schemas import CategoriaIn, CategoriaOut
-from workout_api.categorias.models import CategoriaModel
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+from fastapi import HTTPException
+from typing import List
 
-from workout_api.contrib.dependencies import DatabaseDependency
-from sqlalchemy.future import select
+from app.categorias import models, schemas
 
-router = APIRouter()
+def criar_categoria(db: Session, categoria: schemas.CategoriaCreate) -> schemas.CategoriaResponse:
+    nova_categoria = models.Categoria(**categoria.dict())
+    db.add(nova_categoria)
+    try:
+        db.commit()
+        db.refresh(nova_categoria)
+        return nova_categoria
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Categoria com este nome já existe.")
 
-@router.post(
-    '/', 
-    summary='Criar uma nova Categoria',
-    status_code=status.HTTP_201_CREATED,
-    response_model=CategoriaOut,
-)
-async def post(
-    db_session: DatabaseDependency, 
-    categoria_in: CategoriaIn = Body(...)
-) -> CategoriaOut:
-    categoria_out = CategoriaOut(id=uuid4(), **categoria_in.model_dump())
-    categoria_model = CategoriaModel(**categoria_out.model_dump())
-    
-    db_session.add(categoria_model)
-    await db_session.commit()
+def listar_categorias(db: Session) -> List[schemas.CategoriaResponse]:
+    return db.query(models.Categoria).all()
 
-    return categoria_out
-    
-    
-@router.get(
-    '/', 
-    summary='Consultar todas as Categorias',
-    status_code=status.HTTP_200_OK,
-    response_model=list[CategoriaOut],
-)
-async def query(db_session: DatabaseDependency) -> list[CategoriaOut]:
-    categorias: list[CategoriaOut] = (await db_session.execute(select(CategoriaModel))).scalars().all()
-    
-    return categorias
-
-
-@router.get(
-    '/{id}', 
-    summary='Consulta uma Categoria pelo id',
-    status_code=status.HTTP_200_OK,
-    response_model=CategoriaOut,
-)
-async def get(id: UUID4, db_session: DatabaseDependency) -> CategoriaOut:
-    categoria: CategoriaOut = (
-        await db_session.execute(select(CategoriaModel).filter_by(id=id))
-    ).scalars().first()
-
+def obter_categoria(db: Session, categoria_id: int) -> schemas.CategoriaResponse:
+    categoria = db.query(models.Categoria).filter(models.Categoria.id == categoria_id).first()
     if not categoria:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail=f'Categoria não encontrada no id: {id}'
-        )
-    
+        raise HTTPException(status_code=404, detail="Categoria não encontrada.")
     return categoria
+
+def atualizar_categoria(db: Session, categoria_id: int, dados: schemas.CategoriaUpdate) -> schemas.CategoriaResponse:
+    categoria = db.query(models.Categoria).filter(models.Categoria.id == categoria_id).first()
+    if not categoria:
+        raise HTTPException(status_code=404, detail="Categoria não encontrada.")
+    
+    for key, value in dados.dict(exclude_unset=True).items():
+        setattr(categoria, key, value)
+    
+    try:
+        db.commit()
+        db.refresh(categoria)
+        return categoria
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Atualização inválida (nome duplicado?).")
+
+def deletar_categoria(db: Session, categoria_id: int) -> None:
+    categoria = db.query(models.Categoria).filter(models.Categoria.id == categoria_id).first()
+    if not categoria:
+        raise HTTPException(status_code=404, detail="Categoria não encontrada.")
+    db.delete(categoria)
+    db.commit()

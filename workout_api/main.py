@@ -1,5 +1,16 @@
 from fastapi import FastAPI
-from workout_api.routers import api_router
+from app.routers import router
+from app.database import Base, engine
 
-app = FastAPI(title='WorkoutApi')
-app.include_router(api_router)
+# Cria todas as tabelas no banco de dados
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(
+    title="API Desafio DIO - Atletas",
+    description="CRUD completo de atletas, categorias e centros de treinamento",
+    version="1.0.0"
+)
+
+# Inclui todos os endpoints
+app.include_router(router)
+
