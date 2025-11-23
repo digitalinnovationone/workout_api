@@ -1,62 +1,49 @@
-from uuid import uuid4
-from fastapi import APIRouter, Body, HTTPException, status
-from pydantic import UUID4
-from workout_api.centro_treinamento.schemas import CentroTreinamentoIn, CentroTreinamentoOut
-from workout_api.centro_treinamento.models import CentroTreinamentoModel
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+from fastapi import HTTPException
+from typing import List
 
-from workout_api.contrib.dependencies import DatabaseDependency
-from sqlalchemy.future import select
+from app.centro_treinamento import models, schemas
 
-router = APIRouter()
+def criar_centro(db: Session, centro: schemas.CentroTreinamentoCreate) -> schemas.CentroTreinamentoResponse:
+    novo_centro = models.CentroTreinamento(**centro.dict())
+    db.add(novo_centro)
+    try:
+        db.commit()
+        db.refresh(novo_centro)
+        return novo_centro
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Centro com este nome já existe.")
 
-@router.post(
-    '/', 
-    summary='Criar um novo Centro de treinamento',
-    status_code=status.HTTP_201_CREATED,
-    response_model=CentroTreinamentoOut,
-)
-async def post(
-    db_session: DatabaseDependency, 
-    centro_treinamento_in: CentroTreinamentoIn = Body(...)
-) -> CentroTreinamentoOut:
-    centro_treinamento_out = CentroTreinamentoOut(id=uuid4(), **centro_treinamento_in.model_dump())
-    centro_treinamento_model = CentroTreinamentoModel(**centro_treinamento_out.model_dump())
+def listar_centros(db: Session) -> List[schemas.CentroTreinamentoResponse]:
+    return db.query(models.CentroTreinamento).all()
+
+def obter_centro(db: Session, centro_id: int) -> schemas.CentroTreinamentoResponse:
+    centro = db.query(models.CentroTreinamento).filter(models.CentroTreinamento.id == centro_id).first()
+    if not centro:
+        raise HTTPException(status_code=404, detail="Centro não encontrado.")
+    return centro
+
+def atualizar_centro(db: Session, centro_id: int, dados: schemas.CentroTreinamentoUpdate) -> schemas.CentroTreinamentoResponse:
+    centro = db.query(models.CentroTreinamento).filter(models.CentroTreinamento.id == centro_id).first()
+    if not centro:
+        raise HTTPException(status_code=404, detail="Centro não encontrado.")
     
-    db_session.add(centro_treinamento_model)
-    await db_session.commit()
-
-    return centro_treinamento_out
+    for key, value in dados.dict(exclude_unset=True).items():
+        setattr(centro, key, value)
     
-    
-@router.get(
-    '/', 
-    summary='Consultar todos os centros de treinamento',
-    status_code=status.HTTP_200_OK,
-    response_model=list[CentroTreinamentoOut],
-)
-async def query(db_session: DatabaseDependency) -> list[CentroTreinamentoOut]:
-    centros_treinamento_out: list[CentroTreinamentoOut] = (
-        await db_session.execute(select(CentroTreinamentoModel))
-    ).scalars().all()
-    
-    return centros_treinamento_out
+    try:
+        db.commit()
+        db.refresh(centro)
+        return centro
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Atualização inválida (nome duplicado?).")
 
-
-@router.get(
-    '/{id}', 
-    summary='Consulta um centro de treinamento pelo id',
-    status_code=status.HTTP_200_OK,
-    response_model=CentroTreinamentoOut,
-)
-async def get(id: UUID4, db_session: DatabaseDependency) -> CentroTreinamentoOut:
-    centro_treinamento_out: CentroTreinamentoOut = (
-        await db_session.execute(select(CentroTreinamentoModel).filter_by(id=id))
-    ).scalars().first()
-
-    if not centro_treinamento_out:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail=f'Centro de treinamento não encontrado no id: {id}'
-        )
-    
-    return centro_treinamento_out
+def deletar_centro(db: Session, centro_id: int) -> None:
+    centro = db.query(models.CentroTreinamento).filter(models.CentroTreinamento.id == centro_id).first()
+    if not centro:
+        raise HTTPException(status_code=404, detail="Centro não encontrado.")
+    db.delete(centro)
+    db.commit()
