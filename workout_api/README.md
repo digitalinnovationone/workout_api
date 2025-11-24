@@ -1,0 +1,1 @@
+Encontrei alguns obstáculos no início e, por já estar acostumado com o XAMPP, decidi usá-lo como ambiente de banco de dados. Mesmo assim, testei em produção com o Neon (PostgreSQL) para garantir que tudo funcionasse corretamente.
