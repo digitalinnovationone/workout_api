@@ -1,22 +1,22 @@
 from uuid import uuid4
-from fastapi import APIRouter, Body, HTTPException, status
+from fastapi import APIRouter, Body, status, HTTPException
 from pydantic import UUID4
 from workout_api.centro_treinamento.schemas import CentroTreinamentoIn, CentroTreinamentoOut
 from workout_api.centro_treinamento.models import CentroTreinamentoModel
-
-from workout_api.contrib.dependencies import DatabaseDependency
 from sqlalchemy.future import select
+from workout_api.contrib.dependencies import DataBaseDependency
+
 
 router = APIRouter()
 
 @router.post(
-    '/', 
-    summary='Criar um novo Centro de treinamento',
+    "/", 
+    summary="Criar um novo Centro de treinamento",
     status_code=status.HTTP_201_CREATED,
     response_model=CentroTreinamentoOut,
 )
 async def post(
-    db_session: DatabaseDependency, 
+    db_session: DataBaseDependency, 
     centro_treinamento_in: CentroTreinamentoIn = Body(...)
 ) -> CentroTreinamentoOut:
     centro_treinamento_out = CentroTreinamentoOut(id=uuid4(), **centro_treinamento_in.model_dump())
@@ -26,37 +26,34 @@ async def post(
     await db_session.commit()
 
     return centro_treinamento_out
-    
-    
+
+
 @router.get(
-    '/', 
-    summary='Consultar todos os centros de treinamento',
+    "/", 
+    summary="Consultar todos os centros de treinamento",
     status_code=status.HTTP_200_OK,
     response_model=list[CentroTreinamentoOut],
 )
-async def query(db_session: DatabaseDependency) -> list[CentroTreinamentoOut]:
-    centros_treinamento_out: list[CentroTreinamentoOut] = (
-        await db_session.execute(select(CentroTreinamentoModel))
-    ).scalars().all()
+async def query(db_session: DataBaseDependency) -> list[CentroTreinamentoOut]:
+    centro_treinamento:list[CentroTreinamentoOut] = (await db_session.execute(select(CentroTreinamentoModel))).scalars().all()
     
-    return centros_treinamento_out
+    return centro_treinamento
 
 
 @router.get(
-    '/{id}', 
-    summary='Consulta um centro de treinamento pelo id',
+    "/{id}", 
+    summary="Consultar um centro de treinamento pelo id",
     status_code=status.HTTP_200_OK,
     response_model=CentroTreinamentoOut,
 )
-async def get(id: UUID4, db_session: DatabaseDependency) -> CentroTreinamentoOut:
+async def query(id: UUID4, db_session: DataBaseDependency) -> CentroTreinamentoOut:
     centro_treinamento_out: CentroTreinamentoOut = (
         await db_session.execute(select(CentroTreinamentoModel).filter_by(id=id))
     ).scalars().first()
 
     if not centro_treinamento_out:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail=f'Centro de treinamento não encontrado no id: {id}'
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Centro de treinamento não encontrado pelo id: {id}")
     
     return centro_treinamento_out
+
+
