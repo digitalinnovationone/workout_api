@@ -9,7 +9,13 @@ Código assíncrono apenas significa que a linguagem tem um jeito de dizer para 
 # Projeto
 ## WorkoutAPI
 
-Esta é uma API de competição de crossfit chamada WorkoutAPI (isso mesmo rs, eu acabei unificando duas coisas que gosto: codar e treinar). É uma API pequena, devido a ser um projeto mais hands-on e simplificado nós desenvolveremos uma API de poucas tabelas, mas com o necessário para você aprender como utilizar o FastAPI.
+Esta é uma API de competição de crossfit chamada WorkoutAPI. É uma API pequena, devido a ser um projeto mais hands-on e simplificado nós desenvolveremos uma API de poucas tabelas, mas com o necessário para você aprender como utilizar o FastAPI.
+
+## Desafio DIO - Bootcamp Luizalabs
+
+Este repositório contém uma solução para o desafio do Bootcamp Luizalabs - Back-end com Python na DIO.<br>
+<br>
+Desafio de projeto: **Desenvolvendo sua Primeira API com FastAPI, Python e Docker**
 
 ## Modelagem de entidade e relacionamento - MER
 ![MER](/mer.jpg "Modelagem de entidade e relacionamento")
@@ -20,14 +26,16 @@ A API foi desenvolvida utilizando o `fastapi` (async), junto das seguintes libs:
 
 ## Execução da API
 
-Para executar o projeto, utilizei a [pyenv](https://github.com/pyenv/pyenv), com a versão 3.11.4 do `python` para o ambiente virtual.
+Para este projeto, utilizei o **[Poetry](https://python-poetry.org/)** para o gerenciamento de dependências e do ambiente virtual. O Poetry utiliza os arquivos `pyproject.toml` e `poetry.lock` para garantir que todas as dependências sejam instaladas corretamente.
 
-Caso opte por usar pyenv, após instalar, execute:
+Para configurar o ambiente e instalar as dependências, execute:
 
 ```bash
-pyenv virtualenv 3.11.4 workoutapi
-pyenv activate workoutapi
-pip install -r requirements.txt
+# Instala as dependências e cria o ambiente virtual
+poetry install
+
+# Ativa o ambiente virtual
+poetry shell
 ```
 Para subir o banco de dados, caso não tenha o [docker-compose](https://docs.docker.com/compose/install/linux/) instalado, faça a instalação e logo em seguida, execute:
 
