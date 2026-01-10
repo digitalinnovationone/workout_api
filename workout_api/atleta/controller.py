@@ -4,7 +4,7 @@ from fastapi import APIRouter, Body, HTTPException, status
 from pydantic import UUID4
 from sqlalchemy import select
 from workout_api.atleta.models import AtletaModel
-from workout_api.atleta.schemas import AtletaIn, AtletaOut, AtletaUpdate
+from workout_api.atleta.schemas import AtletaIn, AtletaOut, AtletaUpdate, AtletaResumido
 
 from workout_api.categorias.models import CategoriaModel
 from workout_api.centro_treinamento.models import CentroTreinamentoModel
@@ -63,13 +63,21 @@ async def post(db_session: DataBaseDependency,
         '/all',
           summary="Consultar todos os atletas",
           status_code=status.HTTP_200_OK,
-          response_model = list[AtletaOut],
+          response_model = list[AtletaResumido],
           )
 
-async def query(db_session: DataBaseDependency) -> list[AtletaOut]:
-    atletas: list[AtletaOut] = (await db_session.execute(select(AtletaModel))).scalars().all()
-    
-    return [AtletaOut.model_validate(atleta) for atleta in atletas]
+async def query(db_session: DataBaseDependency) -> list[AtletaResumido]:
+    atletas: list[AtletaResumido] = (await db_session.execute(select(AtletaModel))).scalars().all()
+     
+    #return [AtletaResumido.model_validate(atleta) for atleta in atletas]
+    return [
+        {
+            "nome": atleta.nome,
+            "centro_treinamento": atleta.centro_treinamento.nome,
+            "categoria": atleta.categoria.nome
+        }
+        for atleta in atletas
+    ]
 
 @router.get(
         '/{id}',
