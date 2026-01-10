@@ -1,10 +1,12 @@
 version: "3"
+
 services:
   db:
     image: postgres:11-alpine
+    container_name: workout_api_db
     environment:
-      POSTGRES_PASSWORD: workout
-      POSTGRES_USER: workout
-      POSTGRES_DB: workout
+      - POSTGRES_PASSWORD=workout
+      - POSTGRES_USER=workout
+      - POSTGRES_DB=workout
     ports:
-      - "5432:5432"
+      - "5433:5432"
