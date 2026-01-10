@@ -1,5 +1,6 @@
 from uuid import uuid4
 from fastapi import APIRouter, Body, status, HTTPException
+from fastapi_pagination import LimitOffsetPage, paginate
 from pydantic import UUID4
 from workout_api.centro_treinamento.schemas import CentroTreinamentoIn, CentroTreinamentoOut
 from workout_api.centro_treinamento.models import CentroTreinamentoModel
@@ -43,15 +44,15 @@ async def post(db_session: DataBaseDependency,
         '/',
           summary="Consultar todos os centros de treinamento",
           status_code=status.HTTP_200_OK,
-          response_model = list[CentroTreinamentoOut],
+          response_model = LimitOffsetPage[CentroTreinamentoOut],
           )
 
 async def query(db_session: DataBaseDependency) -> list[CentroTreinamentoOut]:
-    centros_treinamento_out: list[CentroTreinamentoOut] = (
-        await db_session.execute(select(CentroTreinamentoModel)),
+    centros_treinamento_out: LimitOffsetPage[CentroTreinamentoOut] = (
+        await db_session.execute(select(CentroTreinamentoModel))
         ).scalars().all()
     
-    return centros_treinamento_out
+    return paginate(centros_treinamento_out)
 
 @router.get(
         '/{id}',

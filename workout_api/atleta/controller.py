@@ -2,6 +2,7 @@ from datetime import datetime, UTC
 from uuid import uuid4
 from fastapi import APIRouter, Body, HTTPException, status
 from pydantic import UUID4
+from fastapi_pagination import LimitOffsetPage, paginate
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from workout_api.atleta.models import AtletaModel
@@ -70,21 +71,22 @@ async def post(db_session: DataBaseDependency,
         '/all',
           summary="Consultar todos os atletas",
           status_code=status.HTTP_200_OK,
-          response_model = list[AtletaResumido],
+          response_model = LimitOffsetPage[AtletaResumido],
           )
 
 async def query(db_session: DataBaseDependency) -> list[AtletaResumido]:
-    atletas: list[AtletaResumido] = (await db_session.execute(select(AtletaModel))).scalars().all()
-     
-    #return [AtletaResumido.model_validate(atleta) for atleta in atletas]
-    return [
+    atletas: LimitOffsetPage[AtletaResumido] = (await db_session.execute(select(AtletaModel))).scalars().all()
+
+    lista_formatada = [
         {
             "nome": atleta.nome,
             "centro_treinamento": atleta.centro_treinamento.nome,
             "categoria": atleta.categoria.nome
         }
         for atleta in atletas
-    ]
+    ] 
+    
+    return paginate(lista_formatada)
 
 @router.get(
         '/{id}',
@@ -109,7 +111,7 @@ async def query(id: UUID4, db_session: DataBaseDependency) -> AtletaOut:
     '/',
     summary="Consultar atletas por filtros",
     status_code=status.HTTP_200_OK,
-    response_model=list[AtletaOut], # Geralmente retorna uma lista
+    response_model=LimitOffsetPage[AtletaOut], # Geralmente retorna uma lista
 )
 async def query(
     db_session: DataBaseDependency,
@@ -140,7 +142,7 @@ async def query(
                             detail=f"Nenhum atleta encontrado com o nome: {nome}",
                             )
         
-    return [AtletaOut.model_validate(atleta) for atleta in atletas]
+    return paginate([AtletaOut.model_validate(atleta) for atleta in atletas])
 
 @router.patch(
         '/{id}',
