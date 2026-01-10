@@ -60,7 +60,7 @@ async def post(db_session: DataBaseDependency,
     return atleta_out
 
 @router.get(
-        '/',
+        '/all',
           summary="Consultar todos os atletas",
           status_code=status.HTTP_200_OK,
           response_model = list[AtletaOut],
@@ -89,6 +89,43 @@ async def query(id: UUID4, db_session: DataBaseDependency) -> AtletaOut:
                             )
     
     return atleta
+
+@router.get(
+    '/',
+    summary="Consultar atletas por filtros",
+    status_code=status.HTTP_200_OK,
+    response_model=list[AtletaOut], # Geralmente retorna uma lista
+)
+async def query(
+    db_session: DataBaseDependency,
+    nome: str | None = None,
+    cpf: str | None = None
+) -> list[AtletaOut]:
+    
+    query = select(AtletaModel)
+    
+    if cpf and cpf.strip():
+        query = query.filter(AtletaModel.cpf == cpf)
+    if nome and nome.strip():
+        query = query.filter(AtletaModel.nome.ilike(f"%{nome}%"))
+    
+    atletas: list[AtletaOut] = (await db_session.execute(query)).scalars().all()
+
+    if not atletas:
+        if not cpf and not nome:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                            detail=f"Nenhum atleta encontrado",
+                            )
+        if cpf:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                            detail=f"Nenhum atleta encontrado com o CPF: {cpf}",
+                            )
+        if nome:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                            detail=f"Nenhum atleta encontrado com o nome: {nome}",
+                            )
+        
+    return [AtletaOut.model_validate(atleta) for atleta in atletas]
 
 @router.patch(
         '/{id}',
